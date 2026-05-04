@@ -1,54 +1,70 @@
-🃏 README: Unser Custom Skyjo Spiel
-Willkommen zu unserem eigenen Skyjo-Kartenspiel! Diese Anleitung fasst zusammen, woraus unser Set besteht und wie das Spiel funktioniert.
 
-📦 Spielmaterial
-Unser Deck besteht aus maßgeschneiderten Karten im exklusiven Diamanten-Design (Zahlen in Diamant-Optik). Ein Standard-Skyjo-Deck enthält insgesamt 150 Karten.
+# 🃏 Das Skyjo-Spiel
 
-Zahlenwerte: Die Karten reichen typischerweise von -2 bis 12.
+> **Willkommen zur offiziellen Anleitung unseres maßgeschneiderten Skyjo-Spiels!** 
+> Wir haben die klassischen Karten durch unser eigenes, exklusives Design ersetzt – jede Zahl erstrahlt nun in einem geschliffenen, brillanten Diamant-Stil. 
 
-(Tipp: Falls ihr bei eurem eigenen Deck bestimmte Zahlen wie negative Werte weggelassen oder die Verteilung geändert habt, notiert das einfach hier!)
+---
 
-🎯 Ziel des Spiels
-Das Ziel von Skyjo ist es, über mehrere Runden hinweg so wenige Punkte wie möglich zu sammeln. Sobald ein Spieler insgesamt 100 oder mehr Punkte erreicht hat, endet das Spiel. Der Spieler mit der niedrigsten Punktzahl gewinnt.
+## 📦 1. Spielmaterial
 
-⚙️ Spielvorbereitung
-Mischen & Austeilen: Die Karten werden gut gemischt. Jeder Spieler erhält 12 Karten.
+Das Deck besteht aus insgesamt **150 Spielkarten**, die speziell für unsere Runden angefertigt wurden.
 
-Auslage: Jeder Spieler legt seine 12 Karten verdeckt in einem Raster von 3 Reihen und 4 Spalten (3x4) vor sich ab.
+| Eigenschaft | Details |
+| :--- | :--- |
+| **Kartenwerte** | Von **-2 bis 12** |
+| **Design** | Farbig gestaltete Karten mit zentraler Zahl in 3D-Diamant-Optik |
+| **Kartenanzahl** | 150 Stück im kompletten Deck |
 
-Stapel: Die restlichen Karten bilden den verdeckten Nachziehstapel in der Mitte. Die oberste Karte wird aufgedeckt und daneben gelegt – das ist der Ablagestapel.
+*(Tipp für euch: Tragt in diese Tabelle gerne noch ein, wie viele Karten es von jeder Zahl genau gibt, falls ihr die Standard-Skyjo-Mengen angepasst habt!)*
 
-Start: Jeder Spieler deckt zu Beginn genau 2 seiner 12 Karten auf. Der Spieler mit der höchsten aufgedeckten Augensumme beginnt.
+---
 
-🔄 Spielablauf
-Wenn du an der Reihe bist, musst du eine der folgenden Aktionen ausführen:
+## 🎯 2. Ziel des Spiels
 
-Option A: Karte vom Ablagestapel ziehen
+Skyjo ist ein Spiel, bei dem man **unterbieten** muss. Wer am Ende die wenigsten Punkte auf dem Konto hat, gewinnt. 
 
-Nimm die oberste offene Karte vom Ablagestapel.
+Gespielt wird über mehrere Runden. Sobald ein Spieler in der Gesamtwertung **100 oder mehr Punkte** erreicht, endet das gesamte Spiel sofort.
 
-Tausche sie gegen eine beliebige deiner 12 Karten aus (egal ob diese bereits offen oder noch verdeckt ist).
+---
 
-Die ausgetauschte Karte legst du offen auf den Ablagestapel.
+## ⚙️ 3. Spielvorbereitung
 
-Option B: Karte vom verdeckten Nachziehstapel ziehen
+1. **Austeilen:** Jeder Spieler erhält **12 Karten**.
+2. **Das Raster:** Lege deine 12 Karten verdeckt in einem **3x4-Raster** (3 Reihen, 4 Spalten) vor dir ab.
+3. **Die Stapel:** Die restlichen Karten kommen verdeckt in die Mitte (Nachziehstapel). Die oberste Karte wird aufgedeckt danebengelegt (Ablagestapel).
+4. **Startschuss:** Jeder Spieler deckt **genau 2 Karten** seiner Auslage auf. Wer hierbei die höchste Augensumme erzielt, darf die Runde beginnen.
 
-Sieh dir die gezogene Karte an.
+---
 
-Entweder: Behalte sie und tausche sie gegen eine deiner 12 Karten aus (die ausgetauschte Karte kommt offen auf den Ablagestapel).
+## 🔄 4. Der Spielablauf
 
-Oder: Wirf die gezogene Karte direkt auf den Ablagestapel. Danach musst du eine deiner bisher verdeckten Karten aufdecken.
+Bist du an der Reihe, musst du dich für exakt einen von zwei möglichen Wegen entscheiden:
 
-🌟 Sonderregel: Spalten abräumen
-Wenn ein Spieler in einer vertikalen Spalte (3 Karten übereinander) dreimal dieselbe Zahl (z.B. dreimal eine rote 9) offen ausliegen hat, darf er diese komplette Spalte abräumen und auf den Ablagestapel werfen. Diese Karten zählen am Ende nicht mehr als Punkte!
+### 🟩 Weg A: Vom Ablagestapel ziehen
+* Du nimmst die offene Karte vom Ablagestapel.
+* Du **musst** sie gegen eine deiner 12 Karten austauschen (egal, ob diese verdeckt oder offen ist).
+* Die alte Karte landet *offen* auf dem Ablagestapel.
 
-🏁 Rundenende & Wertung
-Das Ende wird eingeläutet: Sobald ein Spieler all seine 12 Karten aufgedeckt hat, ist die Runde beendet. Wichtig: Alle anderen Spieler haben nun noch genau einen letzten Zug.
+### 🟦 Weg B: Vom Nachziehstapel ziehen
+* Du ziehst die oberste, verdeckte Karte und schaust sie dir an.
+* **Möglichkeit 1:** Du behältst sie. Tausche sie gegen eine deiner 12 Karten aus (alte Karte kommt auf den Ablagestapel).
+* **Möglichkeit 2:** Sie gefällt dir nicht. Wirf sie direkt auf den Ablagestapel. Als "Strafe" dafür **musst** du nun eine deiner noch verdeckten Karten in deiner Auslage aufdecken.
 
-Punkte zählen: Alle verdeckten Karten werden aufgedeckt. Jeder Spieler addiert die Werte seiner ausliegenden Karten.
+> **🌟 Die Spalten-Regel (Abräumen):**
+> Gelingt es dir, in einer senkrechten Spalte (3 Karten übereinander) dreimal exakt die gleiche Zahl offen ausliegen zu haben, hast du Glück! Du darfst diese komplette Spalte nehmen und auf den Ablagestapel werfen. Diese Minuspunkte bist du los!
 
-Die Skyjo-Falle: Der Spieler, der die Runde beendet hat (als Erster alle Karten offen), muss strikt weniger Punkte haben als alle anderen Mitspieler.
+---
 
-Gelingt ihm das, ist alles gut.
+## 🏁 5. Rundenende & Wertung
 
-Hat ein anderer Spieler gleich viele oder sogar weniger Punkte, wird die Punktzahl des Runden-Beenders für diese Runde verdoppelt!
+Das Finale einer Runde bricht an, sobald ein Spieler **seine letzte verdeckte Karte aufdeckt**. 
+
+* **Letzte Runde:** Alle anderen Mitspieler sind nun noch genau **ein einziges Mal** an der Reihe.
+* **Abrechnung:** Danach decken alle ihre restlichen Karten auf. Die Werte der ausliegenden Karten werden zusammengezählt.
+
+### ⚠️ Achtung: Die Skyjo-Falle!
+Der Spieler, der die Runde beendet hat (indem er als Erster alle Karten offen hatte), trägt ein Risiko: Er **muss** zwingend am Rundenende *weniger* Punkte haben als alle anderen Mitspieler. 
+
+* **Schafft er das?** Perfekt, die Punkte zählen ganz normal.
+* **Schafft er das NICHT?** (Ein anderer Spieler hat gleich viele oder sogar weniger Punkte): Seine eigene Punktzahl wird für diese Runde **verdoppelt**!
