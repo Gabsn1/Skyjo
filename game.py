@@ -35,6 +35,9 @@ class Player():
                     score += card.number
         return score
     
+    def change_card(self, row, column, new_card):
+        self.cards[row][column] = new_card
+
 
 class Game():
 
@@ -50,6 +53,12 @@ class Game():
             if self.player[i] == self.current_player:
                 self.current_player = self.player[(self.player.index(i)+1) % len(self.player)]
                 break
+    
+    def action(self, action, row=None, column=None):
+        if action == "turn_card":
+            self.current_player.turn_card(row, column)
+            self.current_player.get_score()
+            self.next_player()
         
     
     
