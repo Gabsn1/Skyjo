@@ -53,7 +53,7 @@ class Game():
 
     def next_player(self):
         for i in self.player:
-            if self.player[i] == self.current_player:
+            if i == self.current_player:
                 self.current_player = self.player[(self.player.index(i)+1) % len(self.player)]
                 break
     
@@ -62,6 +62,7 @@ class Game():
             self.current_player.turn_card(row, column)
             self.current_player.get_score()
             self.next_player()
+
         elif action == "change_card":
             new_card = self.deck.give_card()
             self.pile.append(self.current_player.change_card(row, column, new_card))
@@ -72,7 +73,7 @@ class Game():
     
 if __name__ == "__main__":
     game = Game(["Martini", "Gabriel", "Yanik"])
-    print(game.player["Martini"].get_score())
-    game.player["Martini"].turn_card(0, 0)
-    print(game.player["Martini"].get_score())
+    print(game.player[0].get_score())
+    game.player[0].turn_card(0, 0)
+    print(game.player[0].get_score())
 
