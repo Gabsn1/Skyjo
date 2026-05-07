@@ -1,40 +1,57 @@
 import pygame
 import sys
-from game import Game 
+import json
+import threading
+import websocket
+
+# ==========================================
+# NETZWERK EINSTELLUNGEN
+# Trage hier die IP-Adresse des PCs ein, der den Server startet!
+# ==========================================
+SERVER_IP = " 10.10.209.115" 
+SERVER_PORT = "8000"
+
+server_zustand = None
+ws_verbindung = None
+mein_name = ""
+
+def netzwerk_nachricht(ws, message):
+    """Wird automatisch aufgerufen, wenn der Server den neuen Spielstand schickt"""
+    global server_zustand
+    server_zustand = json.loads(message)
+
+def netzwerk_starten(name):
+    """Baut die Verbindung auf und meldet sich in der Lobby an"""
+    global ws_verbindung
+    url = f"ws://{SERVER_IP}:{SERVER_PORT}/ws"
+    ws_verbindung = websocket.WebSocketApp(url, on_message=netzwerk_nachricht)
+    
+    # Sobald Verbindung steht, Name an Server schicken
+    ws_verbindung.on_open = lambda ws: ws.send(json.dumps({"aktion": "join", "name": name}))
+    ws_verbindung.run_forever()
+
+def sende_aktion(aktion, row, col):
+    """Schickt einen Klick an den Server"""
+    if ws_verbindung:
+        ws_verbindung.send(json.dumps({"aktion": aktion, "row": row, "col": col}))
 
 def main():
+    global mein_name, server_zustand
     pygame.init()
 
-    # Fenster etwas breiter für den Ablagestapel
     SCREEN_WIDTH, SCREEN_HEIGHT = 900, 600
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Skyjo - Multiplayer")
 
-    # Farben
-    BG_COLOR = (20, 80, 40)
-    WHITE = (255, 255, 255)
-    GOLD = (255, 215, 0)
-    GREEN = (50, 200, 50)
-    GRAY = (150, 150, 150)
-    CARD_BACK_COLOR = (200, 50, 50)
-    CARD_FRONT_COLOR = (240, 240, 240)
-    TEXT_COLOR = (20, 20, 20)
+    BG_COLOR, WHITE, GOLD, GREEN = (20, 80, 40), (255, 255, 255), (255, 215, 0), (50, 200, 50)
+    CARD_BACK, CARD_FRONT, TEXT_COLOR = (200, 50, 50), (240, 240, 240), (20, 20, 20)
 
-    # Schriften
     title_font = pygame.font.SysFont("Arial", 56, bold=True)
     font = pygame.font.SysFont("Arial", 48, bold=True)
     info_font = pygame.font.SysFont("Arial", 24)
-    lobby_font = pygame.font.SysFont("Arial", 32)
 
     current_state = "MENU"
-
-    player_name = ""
-    lobby_players = [] 
-    
     input_box = pygame.Rect(300, 300, 300, 50)
-    input_active = False
-    game = None 
-
     clock = pygame.time.Clock()
     running = True
 
@@ -43,135 +60,85 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             
-            # =================================================
-            # MENU
-            # =================================================
+            # --- NAMENSEINGABE ---
             if current_state == "MENU":
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    input_active = input_box.collidepoint(event.pos)
-                if event.type == pygame.KEYDOWN and input_active:
-                    if event.key == pygame.K_RETURN and len(player_name) > 0:
-                        
-                        # --- SIMULATION FÜR DEN LOKALEN TEST ---
-                        lobby_players = [
-                            {"name": player_name, "ready": False},
-                            {"name": "Gabriel", "ready": False}, 
-                            {"name": "Yanik", "ready": False}    
-                        ]
-                        current_state = "LOBBY"
-                        
-                    elif event.key == pygame.K_BACKSPACE:
-                        player_name = player_name[:-1]
-                    else:
-                        if len(player_name) < 15:
-                            player_name += event.unicode
-
-            # =================================================
-            # LOBBY
-            # =================================================
-            elif current_state == "LOBBY":
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN: 
-                        # --- SIMULATION FÜR DEN LOKALEN TEST ---
-                        for p in lobby_players:
-                            if p["name"] == player_name:
-                                p["ready"] = not p["ready"] 
-                                
-                            if p["name"] != player_name:
-                                p["ready"] = True
-                                
-                # Start prüfen
-                if len(lobby_players) > 0 and all(p["ready"] for p in lobby_players):
-                    # Nur die Namen an das Game-Objekt übergeben (wie in deiner game.py gefordert)
-                    player_names = [p["name"] for p in lobby_players]
-                    game = Game(player_names)
-                    current_state = "GAME"
-
-            # =================================================
-            # GAME
-            # =================================================
-            elif current_state == "GAME":
+                    if event.key == pygame.K_RETURN and len(mein_name) > 0:
+                        # Netzwerk-Thread starten, damit das Spiel nicht einfriert
+                        threading.Thread(target=netzwerk_starten, args=(mein_name,), daemon=True).start()
+                        current_state = "WAITING"
+                    elif event.key == pygame.K_BACKSPACE:
+                        mein_name = mein_name[:-1]
+                    else:
+                        if len(mein_name) < 15:
+                            mein_name += event.unicode
+                            
+            # --- SPIEL & KLICKS ---
+            elif current_state == "GAME" and server_zustand:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_x, mouse_y = event.pos
-                    button = event.button 
+                    x, y = event.pos
+                    # Prüfen, ob wir am Zug sind
+                    if server_zustand["am_zug"] == mein_name:
+                        for r in range(3):
+                            for c in range(4):
+                                rect = pygame.Rect(50 + c*120, 100 + r*170, 100, 150)
+                                if rect.collidepoint(x, y):
+                                    if event.button == 1:
+                                        sende_aktion("turn_card", r, c)
+                                    elif event.button == 3:
+                                        sende_aktion("change_card", r, c)
 
-                    for r in range(3):
-                        for c in range(4):
-                            rect = pygame.Rect(50 + c*120, 100 + r*170, 100, 150)
-                            if rect.collidepoint(mouse_x, mouse_y):
-                                if button == 1:
-                                    # Linksklick -> Aufdecken
-                                    game.action("turn_card", r, c)
-                                elif button == 3:
-                                    # Rechtsklick -> Austauschen
-                                    game.action("change_card", r, c)
-
-
-        # =================================================
-        # ZEICHNEN
-        # =================================================
+        # --- ZEICHNEN ---
         screen.fill(BG_COLOR)
 
         if current_state == "MENU":
-            title_surf = title_font.render("SKYJO", True, WHITE)
-            screen.blit(title_surf, (450 - title_surf.get_width()//2, 100))
-            pygame.draw.rect(screen, WHITE if input_active else (180, 180, 180), input_box)
-            pygame.draw.rect(screen, (0, 0, 0), input_box, 2)
-            screen.blit(lobby_font.render(player_name, True, (0, 0, 0)), (input_box.x + 10, input_box.y + 10))
+            screen.blit(title_font.render("SKYJO - LOBBY", True, WHITE), (250, 100))
+            screen.blit(info_font.render("Dein Name:", True, WHITE), (300, 260))
+            pygame.draw.rect(screen, WHITE, input_box)
+            screen.blit(info_font.render(mein_name, True, (0,0,0)), (input_box.x + 10, input_box.y + 10))
 
-        elif current_state == "LOBBY":
-            screen.blit(title_font.render("SPIEL-LOBBY", True, GOLD), (280, 50))
-            
-            for i, p in enumerate(lobby_players):
-                if p["ready"]:
-                    status_text = "BEREIT"
-                    color = GREEN
-                else:
-                    status_text = "WARTET"
-                    color = GRAY
-                    
-                text_surf = lobby_font.render(f"{i+1}. {p['name']} - {status_text}", True, color)
-                screen.blit(text_surf, (300, 200 + i * 40))
-                
-            hint = info_font.render("Drücke ENTER, um dich bereit zu melden!", True, WHITE)
-            screen.blit(hint, (450 - hint.get_width()//2, 500))
+        # Zustand des Servers auswerten
+        elif current_state == "WAITING":
+            if server_zustand and server_zustand.get("status") == "game":
+                current_state = "GAME"
+            else:
+                verbunden = len(server_zustand["spieler"]) if server_zustand else 0
+                txt = f"Warte auf Spieler 2... ({verbunden}/2 verbunden)"
+                screen.blit(title_font.render(txt, True, GOLD), (100, 250))
 
         elif current_state == "GAME":
-            # Spieler Info
-            info_text = info_font.render(f"Am Zug: {game.current_player.name} | Punkte: {game.current_player.get_score()}", True, WHITE)
-            screen.blit(info_text, (20, 20))
-            controls_text = info_font.render("Linksklick: Aufdecken | Rechtsklick: Austauschen", True, GOLD)
-            screen.blit(controls_text, (20, 550))
-
-            # 1. Raster des Spielers zeichnen
-            for row_idx, row in enumerate(game.current_player.cards):
-                for col_idx, card in enumerate(row):
-                    x, y = 50 + col_idx*120, 100 + row_idx*170
-                    rect = pygame.Rect(x, y, 100, 150)
-                    if card.visible:
-                        pygame.draw.rect(screen, CARD_FRONT_COLOR, rect, border_radius=10)
-                        val_surf = font.render(str(card.number), True, TEXT_COLOR)
+            am_zug = server_zustand["am_zug"]
+            meine_daten = server_zustand["spieler_daten"].get(mein_name)
+            
+            # Infos oben anzeigen
+            zug_text = f"Am Zug: {am_zug}"
+            color = GREEN if am_zug == mein_name else WHITE
+            screen.blit(info_font.render(zug_text, True, color), (20, 20))
+            screen.blit(info_font.render(f"Meine Punkte: {meine_daten['punkte']}", True, WHITE), (20, 50))
+            
+            # Eigene Karten zeichnen
+            for r, reihe in enumerate(meine_daten["karten"]):
+                for c, karte in enumerate(reihe):
+                    rect = pygame.Rect(50 + c*120, 100 + r*170, 100, 150)
+                    if karte["offen"]:
+                        pygame.draw.rect(screen, CARD_FRONT, rect, border_radius=10)
+                        val_surf = font.render(str(karte["nummer"]), True, TEXT_COLOR)
                         screen.blit(val_surf, val_surf.get_rect(center=rect.center))
                     else:
-                        pygame.draw.rect(screen, CARD_BACK_COLOR, rect, border_radius=10)
+                        pygame.draw.rect(screen, CARD_BACK, rect, border_radius=10)
                         pygame.draw.rect(screen, GOLD, rect, width=3, border_radius=10)
 
-            # 2. Ablagestapel (Pile) zeichnen
-            pile_x, pile_y = 650, 100
-            screen.blit(info_font.render("Ablagestapel", True, WHITE), (pile_x, pile_y - 40))
-            pile_rect = pygame.Rect(pile_x, pile_y, 100, 150)
-            
-            if len(game.pile) > 0:
-                top_card = game.pile[-1]
-                pygame.draw.rect(screen, CARD_FRONT_COLOR, pile_rect, border_radius=10)
-                pygame.draw.rect(screen, (100, 100, 100), pile_rect, width=3, border_radius=10)
-                screen.blit(font.render(str(top_card.number), True, TEXT_COLOR), font.render(str(top_card.number), True, TEXT_COLOR).get_rect(center=pile_rect.center))
-            else:
-                pygame.draw.rect(screen, (50, 100, 50), pile_rect, border_radius=10)
-                pygame.draw.rect(screen, (100, 150, 100), pile_rect, width=3, border_radius=10)
+            # Ablagestapel zeichnen
+            screen.blit(info_font.render("Ablage", True, WHITE), (650, 60))
+            pile_rect = pygame.Rect(650, 100, 100, 150)
+            ablage_wert = server_zustand.get("ablage")
+            if ablage_wert is not None:
+                pygame.draw.rect(screen, CARD_FRONT, pile_rect, border_radius=10)
+                val_surf = font.render(str(ablage_wert), True, TEXT_COLOR)
+                screen.blit(val_surf, val_surf.get_rect(center=pile_rect.center))
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(30)
 
     pygame.quit()
     sys.exit()
