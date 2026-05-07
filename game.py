@@ -1,7 +1,6 @@
 import random
 
 class Card():
-
     def __init__(self, number):
         self.number = number
         self.visible = False
@@ -10,7 +9,6 @@ class Card():
         self.visible = not self.visible
 
 class Deck():
-    
     def __init__(self):
         self.cards = [Card(i-3) for _ in range(10) for i in range(1, 16)]
         random.shuffle(self.cards)
@@ -19,7 +17,6 @@ class Deck():
         return self.cards.pop()
 
 class Player():
-
     def __init__(self, name, deck):
         self.name = name
         self.cards = [[deck.give_card() for _ in range(4)] for _ in range(3)]
@@ -38,42 +35,46 @@ class Player():
     def change_card(self, row, column, new_card):
         old_card = self.cards[row][column]
         self.cards[row][column] = new_card
+        
+        # WICHTIG: Die neu gezogene Karte wird offen in die Auslage gelegt
+        self.cards[row][column].visible = True 
         return old_card
 
-
 class Game():
-
     def __init__(self, player_names):
         self.deck = Deck()
         self.pile = []
         self.player = []
-        for i in player_names:
-            self.player.append(Player(i, self.deck))
+        
+        for name in player_names:
+            self.player.append(Player(name, self.deck))
+            
         self.current_player = self.player[0]
 
     def next_player(self):
-        for i in self.player:
-            if i == self.current_player:
-                self.current_player = self.player[(self.player.index(i)+1) % len(self.player)]
+        for p in self.player:
+            if p == self.current_player:
+                self.current_player = self.player[(self.player.index(p) + 1) % len(self.player)]
                 break
     
-    def action(self, action, row=None, column=None):
-        if action == "turn_card":
+    def action(self, action_type, row=None, column=None):
+        if action_type == "turn_card":
             self.current_player.turn_card(row, column)
-            self.current_player.get_score()
             self.next_player()
 
-        elif action == "change_card":
+        elif action_type == "change_card":
             new_card = self.deck.give_card()
-            self.pile.append(self.current_player.change_card(row, column, new_card))
-            self.current_player.get_score()
+            old_card = self.current_player.change_card(row, column, new_card)
+            
+            # WICHTIG: Die abgeworfene Karte auf dem Stapel muss sichtbar sein
+            old_card.visible = True
+            self.pile.append(old_card)
             self.next_player()
         
-    
-    
 if __name__ == "__main__":
     game = Game(["Martini", "Gabriel", "Yanik"])
-    print(game.player[0].get_score())
-    game.player[0].turn_card(0, 0)
-    print(game.player[0].get_score())
-
+    print(f"Start-Punkte {game.player[0].name}:", game.player[0].get_score())
+    
+    # Martini deckt die erste Karte auf
+    game.action("turn_card", 0, 0)
+    print(f"Punkte nach Aufdecken:", game.player[0].get_score())
