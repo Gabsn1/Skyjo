@@ -36,13 +36,16 @@ class Player():
         return score
     
     def change_card(self, row, column, new_card):
+        old_card = self.cards[row][column]
         self.cards[row][column] = new_card
+        return old_card
 
 
 class Game():
 
     def __init__(self, player_names):
         self.deck = Deck()
+        self.pile = []
         self.player = []
         for i in player_names:
             self.player.append(Player(i, self.deck))
@@ -57,6 +60,11 @@ class Game():
     def action(self, action, row=None, column=None):
         if action == "turn_card":
             self.current_player.turn_card(row, column)
+            self.current_player.get_score()
+            self.next_player()
+        elif action == "change_card":
+            new_card = self.deck.give_card()
+            self.pile.append(self.current_player.change_card(row, column, new_card))
             self.current_player.get_score()
             self.next_player()
         
