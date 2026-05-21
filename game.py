@@ -35,8 +35,6 @@ class Player():
     def change_card(self, row, column, new_card):
         old_card = self.cards[row][column]
         self.cards[row][column] = new_card
-        
-        # WICHTIG: Die neu gezogene Karte wird offen in die Auslage gelegt
         self.cards[row][column].visible = True 
         return old_card
 
@@ -66,7 +64,6 @@ class Game():
             new_card = self.deck.give_card()
             old_card = self.current_player.change_card(row, column, new_card)
             
-            # WICHTIG: Die abgeworfene Karte auf dem Stapel muss sichtbar sein
             old_card.visible = True
             self.pile.append(old_card)
             self.next_player()
@@ -74,7 +71,6 @@ class Game():
 if __name__ == "__main__":
     game = Game(["Martini", "Gabriel", "Yanik"])
     print(f"Start-Punkte {game.player[0].name}:", game.player[0].get_score())
-    
-    # Martini deckt die erste Karte auf
+
     game.action("turn_card", 0, 0)
     print(f"Punkte nach Aufdecken:", game.player[0].get_score())
