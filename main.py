@@ -8,7 +8,7 @@ import os
 # ==========================================
 # NETZWERK EINSTELLUNGEN
 # ==========================================
-SERVER_IP = "10.229.96.88" 
+SERVER_IP = "localhost" 
 SERVER_PORT = "8000"
 
 server_zustand = None
@@ -159,20 +159,21 @@ def main():
                         if len(mein_name) < 15:
                             mein_name += event.unicode
                             
-            # --- IN GAME ---
+# --- IN GAME ---
             elif current_state == "GAME" and server_zustand:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if server_zustand.get("am_zug") == mein_name:
-                        for r in range(3):
-                            for c in range(4):
+                        # Berechne die Klicks auf das eigene Grid
+                        for r in range(len(meine_daten["karten"])): # Dynamisch, falls Zeilen gelöscht werden
+                            for c in range(len(meine_daten["karten"][r])):
                                 rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
                                                    GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
                                                    CARD_WIDTH, CARD_HEIGHT)
                                 if rect.collidepoint(event.pos):
-                                    if event.button == 1: # Linksklick
-                                        sende_aktion("turn_card", r, c)
-                                    elif event.button == 3: # Rechtsklick
-                                        sende_aktion("change_card", r, c)
+                                    if event.button == 1: # Linksklick -> Vom Ablagestapel nehmen & tauschen
+                                        sende_aktion("take_pile", r, c)
+                                    elif event.button == 3: # Rechtsklick -> Vom Deck nehmen & tauschen
+                                        sende_aktion("take_deck", r, c)
 
         # --- ZEICHNEN ---
         screen.fill(TABLE_COLOR)

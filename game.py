@@ -6,7 +6,10 @@ class Card():
         self.visible = False
     
     def change_visibility(self):
-        self.visible = not self.visible
+        if not self.visible:
+            self.visible = True
+            return True
+        return False
 
 class Deck():
     def __init__(self):

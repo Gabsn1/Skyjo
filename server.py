@@ -60,7 +60,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await server.sende_spielstand()
                 
             # --- SPIELER MACHT EINEN ZUG ---
-            elif aktion in ["turn_card", "change_card"] and server.spiel_instanz:
+            elif aktion in ["take_pile", "take_deck"] and server.spiel_instanz:
                 sender_name = server.verbindungen.get(websocket)
                 
                 # Prüfen, ob der Spieler dran ist
@@ -68,20 +68,28 @@ async def websocket_endpoint(websocket: WebSocket):
                     row = daten.get("row")
                     col = daten.get("col")
                     
-                    if aktion == "turn_card":
-                        # Logik aus game.py aufrufen
-                        server.spiel_instanz.current_player.turn_card(row, col)
-                        server.spiel_instanz.next_player()
+                    if row is not None and col is not None:
+                        if aktion == "take_pile":
+                            # 1. Karte vom Ablagestapel nehmen
+                            gezogene_karte = server.spiel_instanz.take_pile()
+                            # 2. Mit der Karte des Spielers tauschen (alte Karte geht auf den Ablagestapel)
+                            server.spiel_instanz.change_card(server.spiel_instanz.current_player, row, col, gezogene_karte)
+                            # 3. Nächster Spieler
+                            server.spiel_instanz.next_player()
+                            
+                        elif aktion == "take_deck":
+                            # 1. Karte vom verdeckten Deck nehmen
+                            neue_karte = server.spiel_instanz.take_deck()
+                            # 2. Mit der Karte des Spielers tauschen
+                            # Da deine Player.change_card(row, col, new_card) ein Tupel (old_card, score) liefert:
+                            alte_karte, _ = server.spiel_instanz.current_player.change_card(row, col, neue_karte)
+                            # 3. Alte Karte offen auf den Ablagestapel legen
+                            alte_karte.visible = True
+                            server.spiel_instanz.pile.append(alte_karte)
+                            # 4. Nächster Spieler
+                            server.spiel_instanz.next_player()
                         
-                    elif aktion == "change_card":
-                        # Logik aus game.py aufrufen
-                        neue_karte = server.spiel_instanz.take_deck()
-                        alte_karte, _ = server.spiel_instanz.current_player.change_card(row, col, neue_karte)
-                        alte_karte.visible = True
-                        server.spiel_instanz.pile.append(alte_karte)
-                        server.spiel_instanz.next_player()
-                        
-                    await server.sende_spielstand()
+                        await server.sende_spielstand()
 
     except WebSocketDisconnect:
         if websocket in server.verbindungen:
