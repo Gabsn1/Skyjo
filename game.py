@@ -26,7 +26,7 @@ class Player():
             if all(card.number == row[0].number for card in row):
                 self.cards.remove(row)
 
-    def __get_score(self):
+    def get_score(self):
         score = 0
         for row in self.cards:
             for card in row:
@@ -37,7 +37,7 @@ class Player():
     def turn_card(self, row, column):
         self.cards[row][column].change_visibility()
         self.__check_rows()
-        score = self.__get_score()
+        score = self.get_score()
         return score
 
     
@@ -46,7 +46,7 @@ class Player():
         self.cards[row][column] = new_card
         new_card.visible = True
         self.__check_rows()
-        score = self.__get_score()
+        score = self.get_score()
         return old_card, score
 
 class Game():
@@ -89,9 +89,9 @@ class Game():
     def get_winner(self):
         winner = self.player[0]
         for p in self.player:
-            if p.__get_score() < winner.__get_score():
+            if p.get_score() < winner.get_score():
                 winner = p
-        return winner.name, winner.__get_score()
+        return winner.name, winner.get_score()
 
 if __name__ == "__main__":
     player_names = ["yanik","max"]
