@@ -21,22 +21,33 @@ class Player():
         self.name = name
         self.cards = [[deck.give_card() for _ in range(4)] for _ in range(3)]
 
-    def turn_card(self, row, column):
-        self.cards[row][column].change_visibility()
+    def __check_rows(self):
+        for row in self.cards:
+            if all(card.number == row[0].number for card in row):
+                self.cards.remove(row)
 
-    def get_score(self):
+    def __get_score(self):
         score = 0
         for row in self.cards:
             for card in row:
                 if card.visible:
                     score += card.number
         return score
+
+    def turn_card(self, row, column):
+        self.cards[row][column].change_visibility()
+        self.__check_rows()
+        score = self.__get_score()
+        return score
+
     
     def change_card(self, row, column, new_card):
         old_card = self.cards[row][column]
         self.cards[row][column] = new_card
-        new_card.visible = True 
-        return old_card
+        new_card.visible = True
+        self.__check_rows()
+        score = self.__get_score()
+        return old_card, score
 
 class Game():
     def __init__(self, player_names):
@@ -64,10 +75,12 @@ class Game():
         return card
 
     def change_card(self, player, row, column, new_card):
-        old_card = player.change_card(row, column, new_card)
+        old_card, score = player.change_card(row, column, new_card)
         self.pile.append(old_card)
+        return score
 
 if __name__ == "__main__":
-    player_names = ["yanik","martini"]
+    player_names = ["yanik","max"]
     game = Game(player_names)
-    Game
+    print(game.change_card(game.player[0], 0, 0, game.take_deck()))
+    print(game.change_card(game.player[0], 0, 1, game.take_pile()))
