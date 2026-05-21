@@ -1,6 +1,6 @@
 import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-import game  # Importiert eure Spiellogik
+import game  # Importiert eure originale, unveränderte Spiellogik
 
 app = FastAPI()
 
@@ -18,15 +18,28 @@ class GameServer:
             for p in self.spiel_instanz.player:
                 # Baut das 3x4 Raster des Spielers nach
                 raster = [[{"nummer": k.number, "offen": k.visible} for k in reihe] for reihe in p.cards]
-                spieler_daten[p.name] = {"punkte": p.get_score(), "karten": raster}
+                
+                # TRICK: Wir greifen mit "_Player__get_score()" auf eure private Funktion zu!
+                punkte = p._Player__get_score()
+                spieler_daten[p.name] = {"punkte": punkte, "karten": raster}
             
             ablage_top = self.spiel_instanz.pile[-1].number if self.spiel_instanz.pile else None
             
+            # Prüfen, ob das Spiel zu Ende ist
+            ist_ende = self.spiel_instanz.check_end()
+            gewinner_name = None
+            gewinner_punkte = None
+            
+            if ist_ende:
+                gewinner_name, gewinner_punkte = self.spiel_instanz.get_winner()
+
             zustand = {
-                "status": "game",
+                "status": "game" if not ist_ende else "game_over",
                 "am_zug": self.spiel_instanz.current_player.name,
                 "spieler_daten": spieler_daten,
-                "ablage": ablage_top
+                "ablage": ablage_top,
+                "gewinner": gewinner_name,
+                "gewinner_punkte": gewinner_punkte
             }
 
         # An alle verbundenen PCs schicken
@@ -66,7 +79,25 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 # Nur ausführen, wenn dieser Spieler auch wirklich dran ist
                 if server.spiel_instanz.current_player.name == sender_name:
-                    server.spiel_instanz.action(aktion, daten.get("row"), daten.get("col"))
+                    row = daten.get("row")
+                    col = daten.get("col")
+                    
+                    # Da die action()-Funktion in game.py fehlt, übernimmt der Server die Logik:
+                    if aktion == "turn_card":
+                        server.spiel_instanz.current_player.turn_card(row, col)
+                        server.spiel_instanz.next_player()
+                        
+                    elif aktion == "change_card":
+                        # Karte vom Deck ziehen
+                        neue_karte = server.spiel_instanz.take_deck()
+                        # Karte im Raster des Spielers austauschen
+                        alte_karte, _ = server.spiel_instanz.current_player.change_card(row, col, neue_karte)
+                        # Alte Karte offen auf den Ablagestapel werfen
+                        alte_karte.visible = True
+                        server.spiel_instanz.pile.append(alte_karte)
+                        
+                        server.spiel_instanz.next_player()
+                        
                     await server.sende_spielstand()
 
     except WebSocketDisconnect:
