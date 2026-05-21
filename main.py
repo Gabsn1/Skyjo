@@ -10,7 +10,7 @@ import websocket
 # Wenn du auf demselben PC wie der Server testest: "127.0.0.1"
 # Im WLAN mit deinem Kollegen: z. B. "192.168.40.12"
 # ==========================================
-SERVER_IP = "127.0.0.1" 
+SERVER_IP = "10.229.96.88" 
 SERVER_PORT = "8000"
 
 server_zustand = None
