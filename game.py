@@ -78,6 +78,20 @@ class Game():
         old_card, score = player.change_card(row, column, new_card)
         self.pile.append(old_card)
         return score
+    
+    def check_end(self):
+        for p in self.player:
+            for row in p.cards:
+                if all(card.visible for card in row):
+                    return True
+        return False
+    
+    def get_winner(self):
+        winner = self.player[0]
+        for p in self.player:
+            if p.__get_score() < winner.__get_score():
+                winner = p
+        return winner.name, winner.__get_score()
 
 if __name__ == "__main__":
     player_names = ["yanik","max"]
