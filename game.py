@@ -35,13 +35,13 @@ class Player():
     def change_card(self, row, column, new_card):
         old_card = self.cards[row][column]
         self.cards[row][column] = new_card
-        self.cards[row][column].visible = True 
+        new_card.visible = True 
         return old_card
 
 class Game():
     def __init__(self, player_names):
         self.deck = Deck()
-        self.pile = []
+        self.pile = [self.deck.give_card()]
         self.player = []
         
         for name in player_names:
@@ -55,22 +55,19 @@ class Game():
                 self.current_player = self.player[(self.player.index(p) + 1) % len(self.player)]
                 break
     
-    def action(self, action_type, row=None, column=None):
-        if action_type == "turn_card":
-            self.current_player.turn_card(row, column)
-            self.next_player()
+    def take_pile(self):
+        card = self.pile.pop()
+        return card
 
-        elif action_type == "change_card":
-            new_card = self.deck.give_card()
-            old_card = self.current_player.change_card(row, column, new_card)
-            
-            old_card.visible = True
-            self.pile.append(old_card)
-            self.next_player()
-        
+    def take_deck(self):
+        card = self.deck.give_card()
+        return card
+
+    def change_card(self, player, row, column, new_card):
+        old_card = player.change_card(row, column, new_card)
+        self.pile.append(old_card)
+
 if __name__ == "__main__":
-    game = Game(["Martini", "Gabriel", "Yanik"])
-    print(f"Start-Punkte {game.player[0].name}:", game.player[0].get_score())
-
-    game.action("turn_card", 0, 0)
-    print(f"Punkte nach Aufdecken:", game.player[0].get_score())
+    player_names = ["yanik","martini"]
+    game = Game(player_names)
+    Game
