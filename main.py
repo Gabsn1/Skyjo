@@ -8,7 +8,7 @@ import websocket
 # NETZWERK EINSTELLUNGEN
 # Trage hier die IP-Adresse des PCs ein, der den Server startet!
 # ==========================================
-SERVER_IP = " 10.10.209.115" 
+SERVER_IP = "127.0.0.1" 
 SERVER_PORT = "8000"
 
 server_zustand = None
@@ -24,10 +24,29 @@ def netzwerk_starten(name):
     """Baut die Verbindung auf und meldet sich in der Lobby an"""
     global ws_verbindung
     url = f"ws://{SERVER_IP}:{SERVER_PORT}/ws"
-    ws_verbindung = websocket.WebSocketApp(url, on_message=netzwerk_nachricht)
+    print(f"⏳ VERSUCHE VERBINDUNG ZU: {url}")
     
-    # Sobald Verbindung steht, Name an Server schicken
-    ws_verbindung.on_open = lambda ws: ws.send(json.dumps({"aktion": "join", "name": name}))
+    # 1. Wenn es klappt
+    def bei_oeffnen(ws):
+        print("🟢 VERBINDUNG ERFOLGREICH! Sende Namen...")
+        ws.send(json.dumps({"aktion": "join", "name": name}))
+        
+    # 2. Wenn es knallt (Fehlermeldung abfangen)
+    def bei_fehler(ws, error):
+        print(f"🔴 NETZWERK-FEHLER: {error}")
+        
+    # 3. Wenn die Verbindung abbricht
+    def bei_schliessen(ws, close_status_code, close_msg):
+        print("⭕ VERBINDUNG WURDE GETRENNT!")
+
+    ws_verbindung = websocket.WebSocketApp(
+        url, 
+        on_message=netzwerk_nachricht,
+        on_error=bei_fehler,
+        on_close=bei_schliessen
+    )
+    
+    ws_verbindung.on_open = bei_oeffnen
     ws_verbindung.run_forever()
 
 def sende_aktion(aktion, row, col):
