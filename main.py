@@ -8,7 +8,7 @@ import os
 # ==========================================
 # NETZWERK EINSTELLUNGEN
 # ==========================================
-SERVER_IP = "localhost" 
+SERVER_IP = "192.168.224.88" 
 SERVER_PORT = "8000"
 
 server_zustand = None
@@ -151,6 +151,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            
+            # --- MENÜ ---
+            elif current_state == "MENU":
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN and len(mein_name) > 0:
                         threading.Thread(target=netzwerk_starten, args=(mein_name,), daemon=True).start()
