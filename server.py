@@ -11,7 +11,10 @@ class GameServer:
 
     async def sende_spielstand(self):
         if not self.spiel_instanz:
-            zustand = {"status": "lobby", "spieler": list(self.verbindungen.values())}
+            spieler_liste = list(self.verbindungen.values())
+            # Der erste Spieler in der Liste wird automatisch zum Host
+            host = spieler_liste[0] if spieler_liste else None
+            zustand = {"status": "lobby", "spieler": spieler_liste, "host": host}
         else:
             spieler_daten = {}
             for p in self.spiel_instanz.player:
@@ -83,7 +86,6 @@ async def websocket_endpoint(websocket: WebSocket):
                             # 1. Karte vom verdeckten Deck nehmen
                             neue_karte = server.spiel_instanz.take_deck()
                             # 2. Mit der Karte des Spielers tauschen
-                            # Da deine Player.change_card(row, col, new_card) ein Tupel (old_card, score) liefert:
                             alte_karte, _ = server.spiel_instanz.current_player.change_card(row, col, neue_karte)
                             # 3. Alte Karte offen auf den Ablagestapel legen
                             alte_karte.visible = True
@@ -99,7 +101,6 @@ async def websocket_endpoint(websocket: WebSocket):
         server.spiel_instanz = None  
         await server.sende_spielstand()
 
-# Das hier erlaubt dir, den Server einfach über den Play-Button zu starten!
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

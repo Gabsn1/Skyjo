@@ -109,7 +109,6 @@ def draw_mini_grid(screen, x, y, karten, font, color, card_back_color):
             rect = pygame.Rect(x + c * (mini_w + mini_space), y + r * (mini_h + mini_space), mini_w, mini_h)
             if karte["offen"]:
                 pygame.draw.rect(screen, (250, 250, 250), rect, border_radius=3)
-                # Optional: Sehr kleine Zahl zeichnen (oft zu klein zum Lesen, daher nur Farbkodierung)
             else:
                 pygame.draw.rect(screen, card_back_color, rect, border_radius=3)
                 pygame.draw.rect(screen, (255, 215, 0), rect, width=1, border_radius=3)
@@ -151,10 +150,10 @@ def main():
     running = True
 
     # Layout-Berechnungen
-    GRID_START_X = 50       # Eigenes Raster links
+    GRID_START_X = 50       
     GRID_START_Y = 150
-    ABLAGE_X = 650          # Ablage in der Mitte
-    OPPONENT_START_X = 950  # Gegner auf der rechten Seite
+    ABLAGE_X = 650          
+    OPPONENT_START_X = 950  
 
     while running:
         mouse_pos = pygame.mouse.get_pos()
@@ -178,11 +177,14 @@ def main():
             # --- WAITING / START BUTTON ---
             elif current_state == "WAITING" and server_zustand:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    spieler_liste = server_zustand.get("spieler", [])
-                    if len(spieler_liste) >= 2:
-                        start_button = pygame.Rect(450, 600, 350, 60)
-                        if start_button.collidepoint(event.pos):
-                            sende_aktion("start_game")
+                    host = server_zustand.get("host")
+                    # Nur der Host darf den Klick auslösen!
+                    if mein_name == host:
+                        spieler_liste = server_zustand.get("spieler", [])
+                        if len(spieler_liste) >= 2:
+                            start_button = pygame.Rect(450, 600, 350, 60)
+                            if start_button.collidepoint(event.pos):
+                                sende_aktion("start_game")
             
             # --- IN GAME ---
             elif current_state == "GAME" and server_zustand:
@@ -221,21 +223,28 @@ def main():
                     current_state = "GAME"
                 else:
                     spieler_liste = server_zustand.get("spieler", [])
+                    host = server_zustand.get("host")
                     txt = f"Spieler in der Lobby: {len(spieler_liste)}/8"
                     screen.blit(title_font.render(txt, True, GOLD), (420, 150))
                     
                     for i, s_name in enumerate(spieler_liste):
-                        screen.blit(large_info_font.render(f"• {s_name}", True, WHITE), (550, 250 + i * 40))
+                        # Markiert den Host in der Liste
+                        mark = " (Host)" if s_name == host else ""
+                        screen.blit(large_info_font.render(f"• {s_name}{mark}", True, WHITE), (550, 250 + i * 40))
                     
-                    # Start-Button
-                    start_button = pygame.Rect(450, 600, 350, 60)
-                    button_color = ACCENT_GREEN if len(spieler_liste) >= 2 else (100, 100, 100)
-                    pygame.draw.rect(screen, button_color, start_button, border_radius=10)
-                    pygame.draw.rect(screen, GOLD, start_button, width=3, border_radius=10)
-                    
-                    btn_text = "SPIEL STARTEN" if len(spieler_liste) >= 2 else "Warte auf 2. Spieler..."
-                    txt_surf = large_info_font.render(btn_text, True, (20,20,20) if len(spieler_liste) >= 2 else WHITE)
-                    screen.blit(txt_surf, txt_surf.get_rect(center=start_button.center))
+                    # Start-Button (nur für den Host sichtbar)
+                    if mein_name == host:
+                        start_button = pygame.Rect(450, 600, 350, 60)
+                        button_color = ACCENT_GREEN if len(spieler_liste) >= 2 else (100, 100, 100)
+                        pygame.draw.rect(screen, button_color, start_button, border_radius=10)
+                        pygame.draw.rect(screen, GOLD, start_button, width=3, border_radius=10)
+                        
+                        btn_text = "SPIEL STARTEN" if len(spieler_liste) >= 2 else "Warte auf 2. Spieler..."
+                        txt_surf = large_info_font.render(btn_text, True, (20,20,20) if len(spieler_liste) >= 2 else WHITE)
+                        screen.blit(txt_surf, txt_surf.get_rect(center=start_button.center))
+                    else:
+                        # Das sehen alle Mitspieler
+                        screen.blit(large_info_font.render("Warte auf Host...", True, HOVER_COLOR), (530, 620))
             else:
                 screen.blit(title_font.render("Verbindung wird hergestellt...", True, WHITE), (350, 250))
 
@@ -318,7 +327,7 @@ def main():
                     # Miniatur-Raster zeichnen
                     draw_mini_grid(screen, OPPONENT_START_X, y_offset + 30, daten["karten"], mini_font, g_color, CARD_BACK)
                     
-                    # Nächster Gegner rutscht weiter nach unten (85px Abstand reicht für Mini-Raster)
+                    # Nächster Gegner rutscht weiter nach unten (100px Abstand reicht für Mini-Raster)
                     y_offset += 100 
 
         pygame.display.flip()
