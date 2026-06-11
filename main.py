@@ -195,7 +195,7 @@ def main():
                     current_state = "GAME"
                 else:
                     spieler_liste = server_zustand.get("spieler", [])
-                    txt = f"Warte auf Spieler 2... ({len(spieler_liste)}/2)"
+                    txt = f"Spieler im Spiel: {len(spieler_liste)}/8"
                     screen.blit(title_font.render(txt, True, GOLD), (280, 250))
                     
                     for i, s_name in enumerate(spieler_liste):
