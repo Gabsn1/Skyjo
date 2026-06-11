@@ -47,13 +47,13 @@ async def websocket_endpoint(websocket: WebSocket):
             if aktion == "join":
                 name = daten.get("name")
                 server.verbindungen[websocket] = name
-                
-                # Wenn mindestens 2 Spieler da sind -> Start! (max. 8 Spieler)
-                if 2 <= len(server.verbindungen) <= 8 and server.spiel_instanz is None:
-                    # Spiel startet automatisch mit 2-8 Spielern
-                    if len(server.verbindungen) >= 2:
-                        namen = list(server.verbindungen.values())
-                        server.spiel_instanz = game.Game(namen)
+                await server.sende_spielstand()
+            
+            # --- SPIEL STARTEN ---
+            elif aktion == "start_game" and server.spiel_instanz is None:
+                if 2 <= len(server.verbindungen) <= 8:
+                    namen = list(server.verbindungen.values())
+                    server.spiel_instanz = game.Game(namen)
                     
                     start_karte = server.spiel_instanz.deck.give_card()
                     start_karte.visible = True

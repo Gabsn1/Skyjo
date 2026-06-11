@@ -86,9 +86,14 @@ def netzwerk_starten(name):
     ws_verbindung.on_open = bei_oeffnen
     ws_verbindung.run_forever()
 
-def sende_aktion(aktion, row, col):
+def sende_aktion(aktion, row=None, col=None):
     if ws_verbindung:
-        ws_verbindung.send(json.dumps({"aktion": aktion, "row": row, "col": col}))
+        msg = {"aktion": aktion}
+        if row is not None:
+            msg["row"] = row
+        if col is not None:
+            msg["col"] = col
+        ws_verbindung.send(json.dumps(msg))
 
 # ==========================================
 # GRAFIK HILFSFUNKTIONEN
@@ -146,9 +151,6 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            
-            # --- MENÜ ---
-            if current_state == "MENU":
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN and len(mein_name) > 0:
                         threading.Thread(target=netzwerk_starten, args=(mein_name,), daemon=True).start()
@@ -158,8 +160,17 @@ def main():
                     else:
                         if len(mein_name) < 15:
                             mein_name += event.unicode
-                            
-# --- IN GAME ---
+            
+            # --- WAITING / START BUTTON ---
+            elif current_state == "WAITING" and server_zustand:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    spieler_liste = server_zustand.get("spieler", [])
+                    if len(spieler_liste) >= 2:
+                        start_button = pygame.Rect(350, 600, 350, 60)
+                        if start_button.collidepoint(event.pos):
+                            sende_aktion("start_game")
+            
+            # --- IN GAME ---
             elif current_state == "GAME" and server_zustand:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if server_zustand.get("am_zug") == mein_name:
@@ -190,16 +201,27 @@ def main():
 
         elif current_state == "WAITING":
             pygame.draw.rect(screen, HEADER_COLOR, (0, 0, SCREEN_WIDTH, 100))
+            screen.blit(title_font.render("SKYJO - LOBBY", True, WHITE), (360, 25))
             if server_zustand:
                 if server_zustand.get("status") == "game":
                     current_state = "GAME"
                 else:
                     spieler_liste = server_zustand.get("spieler", [])
                     txt = f"Spieler im Spiel: {len(spieler_liste)}/8"
-                    screen.blit(title_font.render(txt, True, GOLD), (280, 250))
+                    screen.blit(title_font.render(txt, True, GOLD), (280, 150))
                     
                     for i, s_name in enumerate(spieler_liste):
-                        screen.blit(large_info_font.render(f"• {s_name}", True, WHITE), (450, 340 + i * 40))
+                        screen.blit(large_info_font.render(f"• {s_name}", True, WHITE), (450, 250 + i * 40))
+                    
+                    # Start-Button (nur wenn mindestens 2 Spieler da sind)
+                    start_button = pygame.Rect(350, 600, 350, 60)
+                    button_color = ACCENT_GREEN if len(spieler_liste) >= 2 else (100, 100, 100)
+                    pygame.draw.rect(screen, button_color, start_button, border_radius=10)
+                    pygame.draw.rect(screen, GOLD, start_button, width=3, border_radius=10)
+                    
+                    btn_text = "SPIEL STARTEN" if len(spieler_liste) >= 2 else "Warte auf 2. Spieler"
+                    txt_surf = large_info_font.render(btn_text, True, WHITE)
+                    screen.blit(txt_surf, txt_surf.get_rect(center=start_button.center))
             else:
                 screen.blit(title_font.render("Verbindung wird hergestellt...", True, WHITE), (250, 250))
 
