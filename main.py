@@ -173,4 +173,161 @@ def main():
                         mein_name = mein_name[:-1]
                     else:
                         if len(mein_name) < 15:
-                            mein_name += event.
+                            mein_name += event.unicode
+            
+            # --- WAITING / START BUTTON ---
+            elif current_state == "WAITING" and server_zustand:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    spieler_liste = server_zustand.get("spieler", [])
+                    if len(spieler_liste) >= 2:
+                        start_button = pygame.Rect(450, 600, 350, 60)
+                        if start_button.collidepoint(event.pos):
+                            sende_aktion("start_game")
+            
+            # --- IN GAME ---
+            elif current_state == "GAME" and server_zustand:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if server_zustand.get("am_zug") == mein_name:
+                        meine_daten = server_zustand.get("spieler_daten", {}).get(mein_name, {})
+                        karten = meine_daten.get("karten", [])
+                        for r in range(len(karten)):
+                            for c in range(len(karten[r])):
+                                rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
+                                                   GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
+                                                   CARD_WIDTH, CARD_HEIGHT)
+                                if rect.collidepoint(event.pos):
+                                    if event.button == 1: # Linksklick -> Ablage
+                                        sende_aktion("take_pile", r, c)
+                                    elif event.button == 3: # Rechtsklick -> Deck
+                                        sende_aktion("take_deck", r, c)
+
+        # --- ZEICHNEN ---
+        screen.fill(TABLE_COLOR)
+
+        if current_state == "MENU":
+            pygame.draw.rect(screen, HEADER_COLOR, (0, 0, SCREEN_WIDTH, 100))
+            screen.blit(title_font.render("SKYJO - LOBBY", True, WHITE), (460, 25))
+            
+            screen.blit(large_info_font.render("Bitte gib deinen Namen ein:", True, WHITE), (475, 250))
+            pygame.draw.rect(screen, WHITE, input_box, border_radius=8)
+            pygame.draw.rect(screen, GOLD, input_box, width=3, border_radius=8)
+            screen.blit(large_info_font.render(mein_name, True, (20, 20, 20)), (input_box.x + 15, input_box.y + 8))
+
+        elif current_state == "WAITING":
+            pygame.draw.rect(screen, HEADER_COLOR, (0, 0, SCREEN_WIDTH, 100))
+            screen.blit(title_font.render("SKYJO - LOBBY", True, WHITE), (460, 25))
+            if server_zustand:
+                if server_zustand.get("status") == "game":
+                    current_state = "GAME"
+                else:
+                    spieler_liste = server_zustand.get("spieler", [])
+                    txt = f"Spieler in der Lobby: {len(spieler_liste)}/8"
+                    screen.blit(title_font.render(txt, True, GOLD), (420, 150))
+                    
+                    for i, s_name in enumerate(spieler_liste):
+                        screen.blit(large_info_font.render(f"• {s_name}", True, WHITE), (550, 250 + i * 40))
+                    
+                    # Start-Button
+                    start_button = pygame.Rect(450, 600, 350, 60)
+                    button_color = ACCENT_GREEN if len(spieler_liste) >= 2 else (100, 100, 100)
+                    pygame.draw.rect(screen, button_color, start_button, border_radius=10)
+                    pygame.draw.rect(screen, GOLD, start_button, width=3, border_radius=10)
+                    
+                    btn_text = "SPIEL STARTEN" if len(spieler_liste) >= 2 else "Warte auf 2. Spieler..."
+                    txt_surf = large_info_font.render(btn_text, True, (20,20,20) if len(spieler_liste) >= 2 else WHITE)
+                    screen.blit(txt_surf, txt_surf.get_rect(center=start_button.center))
+            else:
+                screen.blit(title_font.render("Verbindung wird hergestellt...", True, WHITE), (350, 250))
+
+        elif current_state == "GAME":
+            am_zug = server_zustand.get("am_zug")
+            alle_daten = server_zustand.get("spieler_daten", {})
+            meine_daten = alle_daten.get(mein_name)
+            
+            # Header Leiste zeichnen
+            pygame.draw.rect(screen, HEADER_COLOR, (0, 0, SCREEN_WIDTH, 80))
+            pygame.draw.line(screen, GOLD, (0, 80), (SCREEN_WIDTH, 80), 2)
+            
+            # Zug-Info oben mittig
+            zug_text = "DU BIST DRAN!" if am_zug == mein_name else f"Am Zug: {am_zug}"
+            color = ACCENT_GREEN if am_zug == mein_name else WHITE
+            screen.blit(title_font.render(zug_text, True, color), (480, 15))
+            
+            if meine_daten:
+                screen.blit(large_info_font.render(f"Deine Punkte: {meine_daten['punkte']}", True, WHITE), (50, 25))
+                
+                # EIGENE KARTEN (Groß)
+                screen.blit(large_info_font.render("Dein Raster:", True, GOLD), (GRID_START_X, GRID_START_Y - 40))
+                for r, reihe in enumerate(meine_daten["karten"]):
+                    for c, karte in enumerate(reihe):
+                        rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
+                                           GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
+                                           CARD_WIDTH, CARD_HEIGHT)
+                        
+                        draw_shadow(screen, rect)
+                        
+                        if karte["offen"]:
+                            wert = karte["nummer"]
+                            if wert in CARD_IMAGES and CARD_IMAGES[wert] is not None:
+                                screen.blit(CARD_IMAGES[wert], rect)
+                            else:
+                                pygame.draw.rect(screen, WHITE, rect, border_radius=10)
+                                val_surf = font.render(str(wert), True, (20, 20, 20))
+                                screen.blit(val_surf, val_surf.get_rect(center=rect.center))
+                        else:
+                            pygame.draw.rect(screen, CARD_BACK, rect, border_radius=10)
+                            pygame.draw.rect(screen, GOLD, rect, width=2, border_radius=10)
+                            inner_rect = rect.inflate(-16, -16)
+                            pygame.draw.rect(screen, GOLD, inner_rect, width=1, border_radius=5)
+                            
+                        # Hover-Effekt
+                        if am_zug == mein_name and rect.collidepoint(mouse_pos):
+                            pygame.draw.rect(screen, HOVER_COLOR, rect, width=4, border_radius=10)
+
+            # ABLAGESTAPEL (Mitte)
+            screen.blit(large_info_font.render("Ablagestapel", True, GOLD), (ABLAGE_X - 10, GRID_START_Y - 40))
+            pile_rect = pygame.Rect(ABLAGE_X, GRID_START_Y, CARD_WIDTH, CARD_HEIGHT)
+            draw_shadow(screen, pile_rect)
+            
+            ablage_wert = server_zustand.get("ablage")
+            if ablage_wert is not None:
+                if ablage_wert in CARD_IMAGES and CARD_IMAGES[ablage_wert] is not None:
+                    screen.blit(CARD_IMAGES[ablage_wert], pile_rect)
+                else:
+                    pygame.draw.rect(screen, WHITE, pile_rect, border_radius=10)
+                    val_surf = font.render(str(ablage_wert), True, (20, 20, 20))
+                    screen.blit(val_surf, val_surf.get_rect(center=pile_rect.center))
+            else:
+                pygame.draw.rect(screen, (30, 90, 50), pile_rect, border_radius=10)
+                pygame.draw.rect(screen, HEADER_COLOR, pile_rect, width=2, border_radius=10)
+
+            # GEGNER SCOREBOARD (Rechts)
+            pygame.draw.line(screen, GOLD, (OPPONENT_START_X - 30, 80), (OPPONENT_START_X - 30, SCREEN_HEIGHT), 2)
+            screen.blit(large_info_font.render("Mitspieler", True, GOLD), (OPPONENT_START_X, 100))
+            
+            y_offset = 150
+            for spieler_name, daten in alle_daten.items():
+                if spieler_name != mein_name:
+                    # Hervorheben, wenn der Gegner dran ist
+                    g_color = ACCENT_GREEN if am_zug == spieler_name else WHITE
+                    
+                    # Name und Punkte
+                    screen.blit(info_font.render(f"{spieler_name}", True, g_color), (OPPONENT_START_X, y_offset))
+                    screen.blit(info_font.render(f"Punkte: {daten['punkte']}", True, WHITE), (OPPONENT_START_X + 150, y_offset))
+                    
+                    # Miniatur-Raster zeichnen
+                    draw_mini_grid(screen, OPPONENT_START_X, y_offset + 30, daten["karten"], mini_font, g_color, CARD_BACK)
+                    
+                    # Nächster Gegner rutscht weiter nach unten (85px Abstand reicht für Mini-Raster)
+                    y_offset += 100 
+
+        pygame.display.flip()
+        clock.tick(30)
+
+    if ws_verbindung:
+        ws_verbindung.close()
+    pygame.quit()
+    sys.exit()
+
+if __name__ == "__main__":
+    main()
