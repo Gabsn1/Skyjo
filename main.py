@@ -18,9 +18,9 @@ mein_name = ""
 # ==========================================
 # MODERNES LAYOUT & KARTEN FORMAT (FEST)
 # ==========================================
-CARD_WIDTH = 110   # Perfekte Spielkarten-Breite
-CARD_HEIGHT = 160  # Perfekte Spielkarten-Höhe
-SPACING = 20       # Abstand zwischen den Karten
+CARD_WIDTH = 110
+CARD_HEIGHT = 160
+SPACING = 20
 
 CARD_IMAGES = {}
 
@@ -37,18 +37,13 @@ def lade_bilder():
         pfad = os.path.join("Bilder", dateiname)
         try:
             bild = pygame.image.load(pfad).convert_alpha()
-            
-            # MAGIE: Findet den Bereich im Bild, der NICHT transparent ist.
-            # Dadurch werden leere Seitenränder ignoriert.
             bounding_rect = bild.get_bounding_rect()
             
             if bounding_rect.width > 0 and bounding_rect.height > 0:
-                # Bild auf den sichtbaren Teil zuschneiden
                 cropped_bild = bild.subsurface(bounding_rect)
             else:
                 cropped_bild = bild
                 
-            # Jetzt wird das zugeschnittene Bild exakt und satt auf 110x160 gestreckt!
             CARD_IMAGES[wert] = pygame.transform.smoothscale(cropped_bild, (CARD_WIDTH, CARD_HEIGHT))
             
         except FileNotFoundError:
@@ -56,7 +51,7 @@ def lade_bilder():
             CARD_IMAGES[wert] = None
 
 # ==========================================
-# NETZWERK FUNKTIONEN (UNVERÄNDERT)
+# NETZWERK FUNKTIONEN
 # ==========================================
 def netzwerk_nachricht(ws, message):
     global server_zustand
@@ -103,7 +98,21 @@ def draw_shadow(surface, rect):
     shadow_rect = rect.copy()
     shadow_rect.x += 4
     shadow_rect.y += 4
-    pygame.draw.rect(surface, (10, 40, 20), shadow_rect, border_radius=10) # Dunkles Grün/Schwarz
+    pygame.draw.rect(surface, (10, 40, 20), shadow_rect, border_radius=10)
+
+def draw_mini_grid(screen, x, y, karten, font, color, card_back_color):
+    """Zeichnet ein Miniatur-Raster für die Gegner"""
+    mini_w, mini_h = 16, 22
+    mini_space = 4
+    for r, reihe in enumerate(karten):
+        for c, karte in enumerate(reihe):
+            rect = pygame.Rect(x + c * (mini_w + mini_space), y + r * (mini_h + mini_space), mini_w, mini_h)
+            if karte["offen"]:
+                pygame.draw.rect(screen, (250, 250, 250), rect, border_radius=3)
+                # Optional: Sehr kleine Zahl zeichnen (oft zu klein zum Lesen, daher nur Farbkodierung)
+            else:
+                pygame.draw.rect(screen, card_back_color, rect, border_radius=3)
+                pygame.draw.rect(screen, (255, 215, 0), rect, width=1, border_radius=3)
 
 # ==========================================
 # HAUPTSPIEL
@@ -112,38 +121,40 @@ def main():
     global mein_name, server_zustand
     pygame.init()
 
-    # Fenstergröße großzügig und modern gestaltet
-    SCREEN_WIDTH = 1050
-    SCREEN_HEIGHT = 700
+    # Fenster etwas breiter gemacht, um 8 Spieler unterzubringen
+    SCREEN_WIDTH = 1250
+    SCREEN_HEIGHT = 750
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Skyjo - Multiplayer")
+    pygame.display.set_caption("Skyjo - Multiplayer (Bis zu 8 Spieler)")
 
     lade_bilder()
 
     # Moderne Farbpalette
-    TABLE_COLOR = (17, 75, 36)      # Edles, dunkles Billard-Grün
-    HEADER_COLOR = (12, 55, 26)     # Etwas dunkler für die obere Leiste
+    TABLE_COLOR = (17, 75, 36)
+    HEADER_COLOR = (12, 55, 26)
     WHITE = (250, 250, 250)
     GOLD = (255, 215, 0)
-    ACCENT_GREEN = (100, 255, 100)  # Leuchtendes Grün für "Am Zug"
-    CARD_BACK = (160, 25, 35)       # Elegantes Dunkelrot
-    HOVER_COLOR = (255, 235, 100)   # Helles Gelb für Hover-Effekt
+    ACCENT_GREEN = (100, 255, 100)
+    CARD_BACK = (160, 25, 35)
+    HOVER_COLOR = (255, 235, 100)
 
-    # Schriften (Versuche moderne Systemschriften zu nutzen)
+    # Schriften
     title_font = pygame.font.SysFont("Segoe UI", 48, bold=True)
     font = pygame.font.SysFont("Segoe UI", 36, bold=True)
     info_font = pygame.font.SysFont("Segoe UI", 22)
     large_info_font = pygame.font.SysFont("Segoe UI", 26, bold=True)
+    mini_font = pygame.font.SysFont("Segoe UI", 14)
 
     current_state = "MENU"
-    input_box = pygame.Rect(375, 300, 300, 50)
+    input_box = pygame.Rect(475, 300, 300, 50)
     clock = pygame.time.Clock()
     running = True
 
-    # Layout-Berechnungen (Zentriert das 4x3 Raster)
-    GRID_START_X = 80
-    GRID_START_Y = 130
-    ABLAGE_X = 800
+    # Layout-Berechnungen
+    GRID_START_X = 50       # Eigenes Raster links
+    GRID_START_Y = 150
+    ABLAGE_X = 650          # Ablage in der Mitte
+    OPPONENT_START_X = 950  # Gegner auf der rechten Seite
 
     while running:
         mouse_pos = pygame.mouse.get_pos()
@@ -162,141 +173,4 @@ def main():
                         mein_name = mein_name[:-1]
                     else:
                         if len(mein_name) < 15:
-                            mein_name += event.unicode
-            
-            # --- WAITING / START BUTTON ---
-            elif current_state == "WAITING" and server_zustand:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    spieler_liste = server_zustand.get("spieler", [])
-                    if len(spieler_liste) >= 2:
-                        start_button = pygame.Rect(350, 600, 350, 60)
-                        if start_button.collidepoint(event.pos):
-                            sende_aktion("start_game")
-            
-            # --- IN GAME ---
-            elif current_state == "GAME" and server_zustand:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if server_zustand.get("am_zug") == mein_name:
-                        # Berechne die Klicks auf das eigene Grid
-                        for r in range(len(meine_daten["karten"])): # Dynamisch, falls Zeilen gelöscht werden
-                            for c in range(len(meine_daten["karten"][r])):
-                                rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
-                                                   GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
-                                                   CARD_WIDTH, CARD_HEIGHT)
-                                if rect.collidepoint(event.pos):
-                                    if event.button == 1: # Linksklick -> Vom Ablagestapel nehmen & tauschen
-                                        sende_aktion("take_pile", r, c)
-                                    elif event.button == 3: # Rechtsklick -> Vom Deck nehmen & tauschen
-                                        sende_aktion("take_deck", r, c)
-
-        # --- ZEICHNEN ---
-        screen.fill(TABLE_COLOR)
-
-        if current_state == "MENU":
-            # Elegantes Menü
-            pygame.draw.rect(screen, HEADER_COLOR, (0, 0, SCREEN_WIDTH, 100))
-            screen.blit(title_font.render("SKYJO - LOBBY", True, WHITE), (360, 25))
-            
-            screen.blit(large_info_font.render("Bitte gib deinen Namen ein:", True, WHITE), (375, 250))
-            pygame.draw.rect(screen, WHITE, input_box, border_radius=8)
-            pygame.draw.rect(screen, GOLD, input_box, width=3, border_radius=8)
-            screen.blit(large_info_font.render(mein_name, True, (20, 20, 20)), (input_box.x + 15, input_box.y + 8))
-
-        elif current_state == "WAITING":
-            pygame.draw.rect(screen, HEADER_COLOR, (0, 0, SCREEN_WIDTH, 100))
-            screen.blit(title_font.render("SKYJO - LOBBY", True, WHITE), (360, 25))
-            if server_zustand:
-                if server_zustand.get("status") == "game":
-                    current_state = "GAME"
-                else:
-                    spieler_liste = server_zustand.get("spieler", [])
-                    txt = f"Spieler im Spiel: {len(spieler_liste)}/8"
-                    screen.blit(title_font.render(txt, True, GOLD), (280, 150))
-                    
-                    for i, s_name in enumerate(spieler_liste):
-                        screen.blit(large_info_font.render(f"• {s_name}", True, WHITE), (450, 250 + i * 40))
-                    
-                    # Start-Button (nur wenn mindestens 2 Spieler da sind)
-                    start_button = pygame.Rect(350, 600, 350, 60)
-                    button_color = ACCENT_GREEN if len(spieler_liste) >= 2 else (100, 100, 100)
-                    pygame.draw.rect(screen, button_color, start_button, border_radius=10)
-                    pygame.draw.rect(screen, GOLD, start_button, width=3, border_radius=10)
-                    
-                    btn_text = "SPIEL STARTEN" if len(spieler_liste) >= 2 else "Warte auf 2. Spieler"
-                    txt_surf = large_info_font.render(btn_text, True, WHITE)
-                    screen.blit(txt_surf, txt_surf.get_rect(center=start_button.center))
-            else:
-                screen.blit(title_font.render("Verbindung wird hergestellt...", True, WHITE), (250, 250))
-
-        elif current_state == "GAME":
-            am_zug = server_zustand.get("am_zug")
-            meine_daten = server_zustand.get("spieler_daten", {}).get(mein_name)
-            
-            # Header Leiste zeichnen
-            pygame.draw.rect(screen, HEADER_COLOR, (0, 0, SCREEN_WIDTH, 80))
-            pygame.draw.line(screen, GOLD, (0, 80), (SCREEN_WIDTH, 80), 2)
-            
-            if meine_daten:
-                # Spieler-Status
-                zug_text = f"Am Zug: {am_zug}"
-                color = ACCENT_GREEN if am_zug == mein_name else WHITE
-                screen.blit(large_info_font.render(zug_text, True, color), (30, 25))
-                screen.blit(large_info_font.render(f"Meine Punkte: {meine_daten['punkte']}", True, WHITE), (300, 25))
-                
-                # Eigene Karten zeichnen
-                for r, reihe in enumerate(meine_daten["karten"]):
-                    for c, karte in enumerate(reihe):
-                        rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
-                                           GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
-                                           CARD_WIDTH, CARD_HEIGHT)
-                        
-                        # Schatten zeichnen
-                        draw_shadow(screen, rect)
-                        
-                        if karte["offen"]:
-                            wert = karte["nummer"]
-                            if wert in CARD_IMAGES and CARD_IMAGES[wert] is not None:
-                                screen.blit(CARD_IMAGES[wert], rect)
-                            else:
-                                pygame.draw.rect(screen, WHITE, rect, border_radius=10)
-                                val_surf = font.render(str(wert), True, (20, 20, 20))
-                                screen.blit(val_surf, val_surf.get_rect(center=rect.center))
-                        else:
-                            # Elegante Rückseite
-                            pygame.draw.rect(screen, CARD_BACK, rect, border_radius=10)
-                            pygame.draw.rect(screen, GOLD, rect, width=2, border_radius=10)
-                            inner_rect = rect.inflate(-16, -16)
-                            pygame.draw.rect(screen, GOLD, inner_rect, width=1, border_radius=5)
-                            
-                        # Hover-Effekt, wenn man dran ist und über eine Karte fährt
-                        if am_zug == mein_name and rect.collidepoint(mouse_pos):
-                            pygame.draw.rect(screen, HOVER_COLOR, rect, width=4, border_radius=10)
-
-            # Ablagestapel (Pile) zeichnen
-            screen.blit(large_info_font.render("Ablagestapel", True, GOLD), (ABLAGE_X - 10, GRID_START_Y - 40))
-            pile_rect = pygame.Rect(ABLAGE_X, GRID_START_Y, CARD_WIDTH, CARD_HEIGHT)
-            draw_shadow(screen, pile_rect)
-            
-            ablage_wert = server_zustand.get("ablage")
-            if ablage_wert is not None:
-                if ablage_wert in CARD_IMAGES and CARD_IMAGES[ablage_wert] is not None:
-                    screen.blit(CARD_IMAGES[ablage_wert], pile_rect)
-                else:
-                    pygame.draw.rect(screen, WHITE, pile_rect, border_radius=10)
-                    val_surf = font.render(str(ablage_wert), True, (20, 20, 20))
-                    screen.blit(val_surf, val_surf.get_rect(center=pile_rect.center))
-            else:
-                # Leerer Platzhalter für die Ablage
-                pygame.draw.rect(screen, (30, 90, 50), pile_rect, border_radius=10)
-                pygame.draw.rect(screen, HEADER_COLOR, pile_rect, width=2, border_radius=10)
-
-        pygame.display.flip()
-        clock.tick(30)
-
-    if ws_verbindung:
-        ws_verbindung.close()
-    pygame.quit()
-    sys.exit()
-
-if __name__ == "__main__":
-    main()
+                            mein_name += event.
