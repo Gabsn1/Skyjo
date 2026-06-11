@@ -1,6 +1,6 @@
 import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-import game  
+import game
 
 app = FastAPI()
 
@@ -19,7 +19,7 @@ class GameServer:
             spieler_daten = {}
             for p in self.spiel_instanz.player:
                 # Baut das Raster für das Frontend (main.py)
-                raster = [[{"nummer": k.number, "offen": k.visible} for k in reihe] for reihe in p.cards]
+                raster = [[{"nummer": k.number, "offen": k.visible} if k is not None else None for k in reihe] for reihe in p.cards]
                 
                 # Holt die Punkte über deine get_score() Funktion aus game.py
                 spieler_daten[p.name] = {"punkte": p.get_score(), "karten": raster}
@@ -75,6 +75,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     if row is not None and col is not None:
                         if aktion == "take_pile":
+                            # Überspringen, wenn die Karte bereits gelöscht wurde
+                            if server.spiel_instanz.current_player.cards[row][col] is None:
+                                continue
                             # 1. Karte vom Ablagestapel nehmen
                             gezogene_karte = server.spiel_instanz.take_pile()
                             # 2. Mit der Karte des Spielers tauschen (alte Karte geht auf den Ablagestapel)

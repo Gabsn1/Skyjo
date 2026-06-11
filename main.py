@@ -106,6 +106,8 @@ def draw_mini_grid(screen, x, y, karten, font, color, card_back_color):
     mini_space = 4
     for r, reihe in enumerate(karten):
         for c, karte in enumerate(reihe):
+            if karte is None:
+                continue
             rect = pygame.Rect(x + c * (mini_w + mini_space), y + r * (mini_h + mini_space), mini_w, mini_h)
             if karte["offen"]:
                 pygame.draw.rect(screen, (250, 250, 250), rect, border_radius=3)
@@ -121,8 +123,8 @@ def main():
     pygame.init()
 
     # Fenster etwas breiter gemacht, um 8 Spieler unterzubringen
-    SCREEN_WIDTH = 1250
-    SCREEN_HEIGHT = 750
+    SCREEN_WIDTH = 1350
+    SCREEN_HEIGHT = 850
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Skyjo - Multiplayer (Bis zu 8 Spieler)")
 
@@ -273,6 +275,9 @@ def main():
                                            GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
                                            CARD_WIDTH, CARD_HEIGHT)
                         
+                        if karte is None:
+                            continue
+                            
                         draw_shadow(screen, rect)
                         
                         if karte["offen"]:
