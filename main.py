@@ -4,11 +4,12 @@ import json
 import threading
 import websocket
 import os 
+import math
 
 # ==========================================
 # NETZWERK EINSTELLUNGEN
 # ==========================================
-SERVER_IP = "192.168.224.88" 
+SERVER_IP = "localhost" 
 SERVER_PORT = "8000"
 
 server_zustand = None
@@ -152,6 +153,13 @@ def main():
     input_box = pygame.Rect(525, 300, 300, 50)
     clock = pygame.time.Clock()
     running = True
+    # Animationszustand für Karte, die vom Feld zur Ablage fliegt
+    animating = False
+    anim_start = 0
+    anim_duration = 200  # Millisekunden
+    anim_src_rect = None
+    anim_card_number = None
+    pending_change = None  # (row, col)
 
     GRID_START_X = 50       
     GRID_START_Y = 150
@@ -201,34 +209,60 @@ def main():
             
             # --- IN GAME ---
             elif current_state == "GAME" and server_zustand:
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: 
+                if event.type == pygame.MOUSEBUTTONDOWN:
                     if server_zustand.get("am_zug") == mein_name:
+                        # Während einer laufenden Animation keine weiteren Klicks verarbeiten
+                        if animating:
+                            continue
                         gezogene_karte = server_zustand.get("gezogene_karte")
-                        
-                        if not gezogene_karte:
-                            if deck_rect.collidepoint(event.pos):
-                                sende_aktion("draw_deck")
-                            elif pile_rect.collidepoint(event.pos) and server_zustand.get("ablage") is not None:
-                                sende_aktion("draw_pile")
+                        # LINKS-KLICK: Ziehen (wenn noch nichts gezogen) oder Tauschen (wenn Karte gezogen)
+                        if event.button == 1:
+                            if not gezogene_karte:
+                                if deck_rect.collidepoint(event.pos):
+                                    sende_aktion("draw_deck")
+                                elif pile_rect.collidepoint(event.pos) and server_zustand.get("ablage") is not None:
+                                    sende_aktion("draw_pile")
+                                # Feldkarten können vor dem Ziehen nicht aufgedeckt/gedreht werden
                             else:
+                                    if pile_rect.collidepoint(event.pos) and gezogene_karte.get("quelle") == "deck":
+                                        sende_aktion("discard")
+                                    else:
+                                        # Tauschen: starte Animation der Feldkarte zur Ablage, dann sende Aktion
+                                        for r in range(3):
+                                            for c in range(4):
+                                                rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
+                                                                   GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
+                                                                   CARD_WIDTH, CARD_HEIGHT)
+                                                if rect.collidepoint(event.pos):
+                                                    # Nur starten, wenn nicht bereits animiert wird
+                                                    if not animating:
+                                                        # Hole die angeklickte Kartennummer (falls vorhanden)
+                                                        try:
+                                                            kartendaten = meine_daten['karten'][r][c]
+                                                            if kartendaten is None:
+                                                                continue
+                                                            anim_card_number = kartendaten['nummer']
+                                                        except Exception:
+                                                            anim_card_number = None
+
+                                                        animating = True
+                                                        anim_start = pygame.time.get_ticks()
+                                                        anim_src_rect = rect.copy()
+                                                        pending_change = (r, c)
+
+                        # RECHTS-KLICK: Wenn eine Karte vom DECK gezogen wurde, able­gen und gedrückte Feldkarte umdrehen
+                        elif event.button == 3:
+                            if gezogene_karte and gezogene_karte.get("quelle") == "deck":
+                                # Prüfe, ob auf ein Feld geklickt wurde
                                 for r in range(3):
                                     for c in range(4):
                                         rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
                                                            GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
                                                            CARD_WIDTH, CARD_HEIGHT)
                                         if rect.collidepoint(event.pos):
+                                            # Erst die gezogene Karte auf die Ablage legen, dann die gedrückte Karte umdrehen
+                                            sende_aktion("discard")
                                             sende_aktion("turn_card", r, c)
-                        else:
-                            if pile_rect.collidepoint(event.pos) and gezogene_karte.get("quelle") == "deck":
-                                sende_aktion("discard")
-                            else:
-                                for r in range(3):
-                                    for c in range(4):
-                                        rect = pygame.Rect(GRID_START_X + c * (CARD_WIDTH + SPACING), 
-                                                           GRID_START_Y + r * (CARD_HEIGHT + SPACING), 
-                                                           CARD_WIDTH, CARD_HEIGHT)
-                                        if rect.collidepoint(event.pos):
-                                            sende_aktion("change_card", r, c)
 
         # --- ZEICHNEN ---
         screen.fill(TABLE_COLOR)
@@ -316,6 +350,10 @@ def main():
             
             if am_zug == mein_name and not gezogene_karte and deck_rect.collidepoint(mouse_pos):
                 pygame.draw.rect(screen, HOVER_COLOR, deck_rect, width=4, border_radius=10)
+
+            # Ablage ebenfalls highlighten wie das Deck, wenn noch keine Karte gezogen wurde
+            if am_zug == mein_name and not gezogene_karte and pile_rect.collidepoint(mouse_pos):
+                pygame.draw.rect(screen, HOVER_COLOR, pile_rect, width=4, border_radius=10)
                 
             screen.blit(large_info_font.render("Ablage", True, GOLD), (STAPEL_X - 10, ABLAGE_Y - 40))
             draw_shadow(screen, pile_rect)
@@ -329,6 +367,29 @@ def main():
 
             if am_zug == mein_name and gezogene_karte and gezogene_karte.get("quelle") == "deck" and pile_rect.collidepoint(mouse_pos):
                 pygame.draw.rect(screen, (255, 100, 100), pile_rect, width=4, border_radius=10) 
+
+            # Zeichne fliegende Karte (Animation vom Feld zur Ablage)
+            if animating and anim_src_rect is not None and anim_card_number is not None:
+                now = pygame.time.get_ticks()
+                t = (now - anim_start) / float(anim_duration)
+                if t >= 1.0:
+                    t = 1.0
+                # Lineare Interpolation plus leichter Bogen
+                sx, sy = anim_src_rect.x, anim_src_rect.y
+                tx, ty = pile_rect.x, pile_rect.y
+                ix = int(sx + (tx - sx) * t)
+                iy = int(sy + (ty - sy) * t - 40 * math.sin(t * math.pi))
+                moving_rect = pygame.Rect(ix, iy, CARD_WIDTH, CARD_HEIGHT)
+                draw_shadow(screen, moving_rect)
+                draw_card_front(screen, moving_rect, anim_card_number, font)
+
+                if t >= 1.0:
+                    animating = False
+                    # Nachdem Animation abgeschlossen ist, sende die Aktion an den Server
+                    if pending_change:
+                        r, c = pending_change
+                        sende_aktion("change_card", r, c)
+                        pending_change = None
 
             pygame.draw.line(screen, GOLD, (OPPONENT_START_X - 30, 80), (OPPONENT_START_X - 30, SCREEN_HEIGHT), 2)
             screen.blit(large_info_font.render("Mitspieler", True, GOLD), (OPPONENT_START_X, 100))

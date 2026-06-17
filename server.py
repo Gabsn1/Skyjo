@@ -107,6 +107,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     if aktion == "draw_deck" and not server.gezogene_karte:
                         server.gezogene_karte = server.spiel_instanz.take_deck()
                         server.karten_quelle = "deck"
+                        # Gezogene Karte vom Deck wird sofort aufgedeckt (sichtbar)
+                        if server.gezogene_karte is not None:
+                            server.gezogene_karte.visible = True
                         
                     elif aktion == "draw_pile" and not server.gezogene_karte:
                         server.gezogene_karte = server.spiel_instanz.take_pile()
